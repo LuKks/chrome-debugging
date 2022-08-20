@@ -1,0 +1,20 @@
+{
+  "name": "chrome-debugging",
+  "version": "1.0.0",
+  "description": "Chrome DevTools Protocol",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LuKks/chrome-debugging.git"
+  },
+  "author": "Lucas Barrena (@LuKks)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/LuKks/chrome-debugging/issues"
+  },
+  "homepage": "https://github.com/LuKks/chrome-debugging",
+  "dependencies": {
+    "chrome-remote-interface": "^0.31.3",
+    "mutexify": "^1.4.0"
+  }
+}
