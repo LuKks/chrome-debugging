@@ -90,7 +90,7 @@ async function extendClient (client) {
   client.evaluate = async function (expression, opts = {}) {
     if (typeof expression === 'object') [opts, expression] = [expression, undefined]
     if (expression) opts.expression = expression
-    return tab.send('Runtime.evaluate', opts)
+    return client.send('Runtime.evaluate', opts)
   }
 
   client.getAttributes = async function (nodeId, key) {
