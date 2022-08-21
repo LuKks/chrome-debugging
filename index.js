@@ -40,7 +40,7 @@ module.exports = class ChromeDebuggingProtocol {
       await client.Page.enable()
       await client.Network.enable()
 
-      this.clients[targetId] = client
+      this.clients[targetId] = extendClient(client)
 
       return client
     } finally {
@@ -71,6 +71,41 @@ module.exports = class ChromeDebuggingProtocol {
   }
 }
 
-class Target {
+function extendClient (client) {
+  const { Page, DOM } = client
 
+  client.document = await DOM.getDocument()
+
+  client.$ = async function (selector) {
+    const nodes = await DOM.querySelectorAll({ nodeId: client.document.root.nodeId, selector })
+    return (nodes || {}).nodeIds || []
+  }
+
+  client.frames = async function () {
+    const { frameTree } = await Page.getFrameTree()
+    const { frame, childFrames = [] } = frameTree
+    return [frame, ...childFrames.map(({ frame }) => frame)]
+  }
+
+  client.evaluate = async function (expression, opts = {}) {
+    if (typeof expression === 'object') [opts, expression] = [expression, undefined]
+    if (expression) opts.expression = expression
+    return tab.send('Runtime.evaluate', opts)
+  }
+
+  client.getAttributes = async function (nodeId, key) {
+    const { attributes = [] } = await DOM.getAttributes({ nodeId })
+    if (key === undefined) return attributes
+    return getAttribute(attributes, key)
+  }
+
+  return client
 }
+
+function getAttribute (attributes, key) {
+  const index = attributes.indexOf(key)
+  if (index === -1) return null
+  return attributes[index + 1]
+}
+
+// + should correctly parse all attrs and return them, like http headers
