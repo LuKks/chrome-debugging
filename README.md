@@ -18,10 +18,7 @@ const targets = await chrome.list({ ignoreProtocols: ['devtools'] })
 for (const target of targets) {
   const tab = await chrome.connect(target.id)
 
-  const document = await tab.DOM.getDocument()
-  const $ = (selector) => DOM.querySelectorAll({ nodeId: document.root.nodeId, selector })
-
-  console.log(await $('div'))
+  console.log(await tab.$('*'))
 }
 
 await chrome.destroy()
