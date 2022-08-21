@@ -23,7 +23,7 @@ module.exports = class ChromeDebuggingProtocol {
     })
   }
 
-  async connect (targetId) {
+  async use (targetId) {
     const release = await this._lock()
 
     await this._keepAlive(targetId)

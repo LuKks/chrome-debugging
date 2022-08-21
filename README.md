@@ -16,7 +16,7 @@ const chrome = new ChromeDebugging({ port: 9230 })
 const targets = await chrome.list({ ignoreProtocols: ['devtools'] })
 
 for (const target of targets) {
-  const tab = await chrome.connect(target.id)
+  const tab = await chrome.use(target.id)
 
   console.log(await tab.$('*'))
 }
