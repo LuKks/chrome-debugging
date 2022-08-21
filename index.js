@@ -40,7 +40,7 @@ module.exports = class ChromeDebuggingProtocol {
       await client.Page.enable()
       await client.Network.enable()
 
-      this.clients[targetId] = extendClient(client)
+      this.clients[targetId] = await extendClient(client)
 
       return client
     } finally {
@@ -71,7 +71,7 @@ module.exports = class ChromeDebuggingProtocol {
   }
 }
 
-function extendClient (client) {
+async function extendClient (client) {
   const { Page, DOM } = client
 
   client.document = await DOM.getDocument()
