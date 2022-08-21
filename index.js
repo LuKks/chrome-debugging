@@ -7,7 +7,7 @@ module.exports = class ChromeDebuggingProtocol {
 
     this._lock = mutexify()
     this.port = opts.port
-    this.clients = {}
+    this.connected = {}
   }
 
   get options () {
@@ -29,77 +29,111 @@ module.exports = class ChromeDebuggingProtocol {
     await this._keepAlive(targetId)
 
     try {
-      if (this.clients[targetId]) {
-        return this.clients[targetId]
+      if (this.connected[targetId]) {
+        return this.connected[targetId]
       }
 
-      const client = await CDP({ target: targetId, ...this.options })
+      const target = new Target(this.port, targetId)
+      await target.ready()
 
-      await client.DOM.enable()
-      await client.CSS.enable()
-      await client.Page.enable()
-      await client.Network.enable()
+      this.connected[targetId] = target
 
-      this.clients[targetId] = await extendClient(client)
-
-      return client
+      return target
     } finally {
       release()
     }
   }
 
   async close (targetId) {
-    return this.clients[targetId].close()
+    if (!this.connected[targetId]) return
+
+    await this.connected[targetId].close()
+    delete this.connected[targetId]
   }
 
   async destroy () {
-    for (const targetId in this.clients) {
+    for (const targetId in this.connected) {
       await this.close(targetId)
     }
   }
 
   async _keepAlive (targetId) {
-    const client = this.clients[targetId]
-    if (!client) return
+    const target = this.connected[targetId]
+    if (!target) return
 
     try {
-      await client.DOM.getDocument()
-    } catch (error) {
+      await target.DOM.getDocument()
+    } catch {
       await this.close(targetId)
-      delete this.clients[targetId]
     }
   }
 }
 
-async function extendClient (client) {
-  const { Page, DOM } = client
+class Target {
+  constructor (chromePort, targetId, opts = {}) {
+    this.client = null
+    this.options = opts // + should use it for automatic enable/disable DOM, CSS, etc
 
-  client.document = await DOM.getDocument()
+    this._connect = CDP({ port: chromePort, target: targetId })
+    this._ready = this.ready()
+  }
 
-  client.$ = async function (selector) {
-    const nodes = await DOM.querySelectorAll({ nodeId: client.document.root.nodeId, selector })
+  async ready () {
+    if (this._ready) return this._ready
+
+    this.client = await this._connect
+    this._clone()
+
+    await this.DOM.enable()
+    await this.CSS.enable()
+    await this.Page.enable()
+    await this.Network.enable()
+
+    this.document = await this.DOM.getDocument()
+  }
+
+  async $ (selector) {
+    const nodeId = this.document.root.nodeId
+    const nodes = await this.DOM.querySelectorAll({ selector, nodeId })
     return (nodes || {}).nodeIds || []
   }
 
-  client.frames = async function () {
-    const { frameTree } = await Page.getFrameTree()
+  async frames () {
+    const { frameTree } = await this.Page.getFrameTree()
     const { frame, childFrames = [] } = frameTree
     return [frame, ...childFrames.map(({ frame }) => frame)]
   }
 
-  client.evaluate = async function (expression, opts = {}) {
-    if (typeof expression === 'object') [opts, expression] = [expression, undefined]
+  async evaluate (expression, opts = {}) {
+    if (typeof expression === 'object') return this.evaluate(undefined, expression)
     if (expression) opts.expression = expression
-    return client.send('Runtime.evaluate', opts)
+    return this.Runtime.evaluate(opts)
   }
 
-  client.getAttributes = async function (nodeId, key) {
-    const { attributes = [] } = await DOM.getAttributes({ nodeId })
+  async getAttributes (nodeId, key) {
+    const { attributes = [] } = await this.DOM.getAttributes({ nodeId })
     if (key === undefined) return attributes
     return getAttribute(attributes, key)
   }
 
-  return client
+  _clone () {
+    for (const key in this.client) {
+      // DOM, CSS, Page, etc
+      if (key[0] === key[0].toUpperCase() && !key.includes('.')) {
+        this[key] = this.client[key]
+      }
+    }
+
+    this.alterPath = this.client.alterPath
+  }
+
+  get host () { return this.client.host } // localhost
+  get port () { return this.client.port } // 41003
+  get secure () { return this.client.secure } // false
+  get useHostName () { return this.client.useHostName } // false
+  get local () { return this.client.local } // false
+  get target () { return this.client.target } // ABA5B7CFE72FABAE16EAC42863E470E2
+  get webSocketUrl () { return this.client.webSocketUrl } // ws://127.0.0.1:41003/devtools/page/ABA5B7CFE72FABAE16EAC42863E470E2
 }
 
 function getAttribute (attributes, key) {
