@@ -24,19 +24,20 @@ module.exports = class ChromeDebuggingProtocol {
   }
 
   async use (targetId) {
-    const release = await this._lock()
+    if (!targetId) throw new Error('Target ID is required')
 
-    await this._keepAlive(targetId)
+    const release = await this._lock()
 
     try {
       if (this.connected[targetId]) {
         return this.connected[targetId]
       }
 
-      const target = new Target(this.port, targetId)
+      const target = new Target({ id: targetId, port: this.port })
       await target.ready()
 
       this.connected[targetId] = target
+      target.close = this.close.bind(this, targetId) // overwrite the close method so target can free up itself from parent cache
 
       return target
     } finally {
@@ -45,10 +46,18 @@ module.exports = class ChromeDebuggingProtocol {
   }
 
   async close (targetId) {
-    if (!this.connected[targetId]) return
+    if (!targetId) throw new Error('Target ID is required')
 
-    await this.connected[targetId].close()
-    delete this.connected[targetId]
+    const release = await this._lock()
+
+    try {
+      if (!this.connected[targetId]) return
+
+      await this.connected[targetId].client.close()
+      delete this.connected[targetId]
+    } finally {
+      release()
+    }
   }
 
   async destroy () {
@@ -56,32 +65,22 @@ module.exports = class ChromeDebuggingProtocol {
       await this.close(targetId)
     }
   }
-
-  async _keepAlive (targetId) {
-    const target = this.connected[targetId]
-    if (!target) return
-
-    try {
-      await target.DOM.getDocument()
-    } catch {
-      await this.close(targetId)
-    }
-  }
 }
 
 class Target {
-  constructor (chromePort, targetId, opts = {}) {
-    this.client = null
-    this.options = opts // + should use it for automatic enable/disable DOM, CSS, etc
+  constructor (opts = {}) {
+    if (!opts.id) throw new Error('Target ID is required')
 
-    this._connect = CDP({ port: chromePort, target: targetId })
+    this.client = null
+    this.options = opts
+
     this._ready = this.ready()
   }
 
   async ready () {
     if (this._ready) return this._ready
 
-    this.client = await this._connect
+    this.client = await CDP({ port: this.options.port, target: this.options.id })
     this._clone()
 
     await this.DOM.enable()
@@ -90,6 +89,10 @@ class Target {
     await this.Network.enable()
 
     this.document = await this.DOM.getDocument()
+  }
+
+  async close () {
+    return this.client.close()
   }
 
   async $ (selector) {
@@ -143,3 +146,6 @@ function getAttribute (attributes, key) {
 }
 
 // + should correctly parse all attrs and return them, like http headers
+// + should use target.options for automatic enable/disable DOM, CSS, etc
+
+module.exports.Target = Target
