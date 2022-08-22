@@ -23,21 +23,21 @@ module.exports = class ChromeDebuggingProtocol {
     })
   }
 
-  async use (targetId) {
-    if (!targetId) throw new Error('Target ID is required')
+  async use (id) {
+    if (!id) throw new Error('Target ID is required')
 
     const release = await this._lock()
 
     try {
-      if (this.connected[targetId]) {
-        return this.connected[targetId]
+      if (this.connected[id]) {
+        return this.connected[id]
       }
 
-      const target = new Target({ id: targetId, port: this.port })
+      const target = new Target({ id, port: this.port })
       await target.ready()
 
-      this.connected[targetId] = target
-      target.close = this.close.bind(this, targetId) // overwrite the close method so target can free up itself from parent cache
+      this.connected[id] = target
+      target.close = this.close.bind(this, id) // overwrite the close method so target can free up itself from parent cache
 
       return target
     } finally {
@@ -45,16 +45,16 @@ module.exports = class ChromeDebuggingProtocol {
     }
   }
 
-  async close (targetId) {
-    if (!targetId) throw new Error('Target ID is required')
+  async close (id) {
+    if (!id) throw new Error('Target ID is required')
 
     const release = await this._lock()
 
     try {
-      if (!this.connected[targetId]) return
+      if (!this.connected[id]) return
 
-      await this.connected[targetId].client.close()
-      delete this.connected[targetId]
+      await this.connected[id].client.close()
+      delete this.connected[id]
     } finally {
       release()
     }
