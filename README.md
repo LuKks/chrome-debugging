@@ -8,7 +8,7 @@ npm i chrome-debugging
 
 Cache built-in by target id, common helpers, and easy to use.
 
-It also uses [chrome-remote-interface](https://github.com/cyrus-and/chrome-remote-interface) internally.
+It uses [chrome-remote-interface](https://github.com/cyrus-and/chrome-remote-interface) internally.
 
 ## Usage
 ```javascript
