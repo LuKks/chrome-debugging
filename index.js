@@ -129,6 +129,8 @@ class Target {
     this.alterPath = this.client.alterPath
   }
 
+  get id () { return this.client.target }
+
   get host () { return this.client.host } // localhost
   get port () { return this.client.port } // 41003
   get secure () { return this.client.secure } // false
