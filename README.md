@@ -20,6 +20,7 @@ const targets = await chrome.list({ ignoreProtocols: ['devtools'] })
 for (const target of targets) {
   const tab = await chrome.use(target.id)
 
+  // const { DOM, CSS, Page } = tab
   console.log(await tab.$('*'))
 
   // await tab.close()
