@@ -1,6 +1,6 @@
 {
   "name": "chrome-debugging",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Chrome DevTools Protocol",
   "main": "index.js",
   "repository": {
