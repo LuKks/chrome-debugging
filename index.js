@@ -86,7 +86,6 @@ class Target {
     await this.DOM.enable()
     await this.CSS.enable()
     await this.Page.enable()
-    await this.Network.enable()
 
     this.document = await this.DOM.getDocument()
   }
