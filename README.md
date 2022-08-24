@@ -8,8 +8,6 @@ npm i chrome-debugging
 
 Cache built-in by target id, common helpers, and easy to use.
 
-It uses [chrome-remote-interface](https://github.com/cyrus-and/chrome-remote-interface) internally.
-
 ## Usage
 ```javascript
 const ChromeDebugging = require('chrome-debugging')
@@ -28,6 +26,9 @@ for (const target of targets) {
 
 await chrome.destroy()
 ```
+
+It uses [chrome-remote-interface](https://github.com/cyrus-and/chrome-remote-interface) internally.\
+I.e. `tab` has several properties with methods, etc as the original "CDP client".
 
 ## License
 MIT
