@@ -28,7 +28,7 @@ await chrome.destroy()
 ```
 
 It uses [chrome-remote-interface](https://github.com/cyrus-and/chrome-remote-interface) internally.\
-I.e. `tab` has several properties with methods, etc as the original "CDP client".
+I.e. `tab` has several properties, methods, etc as the original "CDP client".
 
 ## License
 MIT
