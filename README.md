@@ -6,7 +6,9 @@ Chrome DevTools Protocol.
 npm i chrome-debugging
 ```
 
-It uses [chrome-remote-interface](https://github.com/cyrus-and/chrome-remote-interface) internally.
+Cache built-in by target id, common helpers, and easy to use.
+
+It also uses [chrome-remote-interface](https://github.com/cyrus-and/chrome-remote-interface) internally.
 
 ## Usage
 ```javascript
@@ -19,6 +21,8 @@ for (const target of targets) {
   const tab = await chrome.use(target.id)
 
   console.log(await tab.$('*'))
+
+  // await tab.close()
 }
 
 await chrome.destroy()
